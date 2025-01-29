@@ -23,7 +23,9 @@ const httpServer = createServer(app);
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:5174',
-    'https://2wix.ru'
+    'https://2wix.ru',
+    'https://www.2wix.ru',
+    'https://netlify.app'
 ];
 
 // Настройка CORS

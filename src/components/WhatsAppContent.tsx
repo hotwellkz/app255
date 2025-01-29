@@ -87,7 +87,7 @@ const WhatsAppContent: React.FC = () => {
 
             {/* Основной контент */}
             <div className="flex-1 bg-[#eae6df] relative">
-                <WhatsAppConnect serverUrl="http://localhost:3000" isMobile={isMobile} />
+                <WhatsAppConnect serverUrl={import.meta.env.VITE_API_URL} isMobile={isMobile} />
             </div>
         </div>
     );
