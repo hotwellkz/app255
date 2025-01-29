@@ -1,7 +1,4 @@
-import fs from 'fs';
-import path from 'path';
-
-const CHATS_FILE = path.join(__dirname, '../data/chats.json');
+import { saveChatsToSupabase, getLatestChatsFromSupabase } from '../config/supabase';
 
 interface Message {
     from: string;
@@ -20,41 +17,36 @@ interface Chat {
     lastMessage?: Message;
 }
 
-// Убедимся, что директория существует
-function ensureDirectoryExists() {
-    const dir = path.dirname(CHATS_FILE);
-    try {
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true, mode: 0o755 });
-        }
-        // Проверяем, существует ли файл
-        if (!fs.existsSync(CHATS_FILE)) {
-            fs.writeFileSync(CHATS_FILE, JSON.stringify({}), { mode: 0o644 });
-        }
-    } catch (error) {
-        console.error('Error ensuring directory exists:', error);
-        throw error;
-    }
-}
+type ChatStore = { [key: string]: Chat };
 
-// Загрузка чатов из файла
-export function loadChats(): { [key: string]: Chat } {
+// Кэш для чатов
+let chatsCache: ChatStore = {};
+
+// Загрузка чатов
+export async function loadChats(): Promise<ChatStore> {
     try {
-        ensureDirectoryExists();
-        const data = fs.readFileSync(CHATS_FILE, 'utf-8');
-        console.log('Loaded chats data:', data);
-        return JSON.parse(data);
+        // Если есть кэш, возвращаем его
+        if (Object.keys(chatsCache).length > 0) {
+            return chatsCache;
+        }
+
+        // Загружаем из Supabase
+        const supabaseChats = await getLatestChatsFromSupabase();
+        chatsCache = supabaseChats || {};
+        return chatsCache;
     } catch (error) {
         console.error('Error loading chats:', error);
         return {};
     }
 }
 
-// Сохранение чатов в файл
-export function saveChats(chats: { [key: string]: Chat }) {
+// Сохранение чатов
+export async function saveChats(chats: ChatStore) {
     try {
-        ensureDirectoryExists();
-        fs.writeFileSync(CHATS_FILE, JSON.stringify(chats, null, 2));
+        // Обновляем кэш
+        chatsCache = chats;
+        // Сохраняем в Supabase
+        await saveChatsToSupabase(chats);
     } catch (error) {
         console.error('Error saving chats:', error);
         throw error;
@@ -62,27 +54,22 @@ export function saveChats(chats: { [key: string]: Chat }) {
 }
 
 // Добавление нового сообщения
-export function addMessage(message: Message): Chat {
-    try {
-        const chats = loadChats();
-        const phoneNumber = message.fromMe ? message.to! : message.from;
-        
-        if (!chats[phoneNumber]) {
-            chats[phoneNumber] = {
-                phoneNumber,
-                name: phoneNumber,
-                messages: [],
-                lastMessage: message
-            };
-        }
-        
-        chats[phoneNumber].messages.push(message);
-        chats[phoneNumber].lastMessage = message;
-        
-        saveChats(chats);
-        return chats[phoneNumber];
-    } catch (error) {
-        console.error('Error adding message:', error);
-        throw error;
+export async function addMessage(message: Message): Promise<Chat> {
+    const chats = await loadChats();
+    const phoneNumber = message.fromMe ? message.to! : message.from;
+    
+    if (!chats[phoneNumber]) {
+        chats[phoneNumber] = {
+            phoneNumber,
+            name: phoneNumber,
+            messages: [],
+            lastMessage: message
+        };
     }
+    
+    chats[phoneNumber].messages.push(message);
+    chats[phoneNumber].lastMessage = message;
+    
+    await saveChats(chats);
+    return chats[phoneNumber];
 }

@@ -9,9 +9,11 @@
     "dev": "nodemon src/server.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.48.1",
     "@types/cors": "^2.8.17",
     "@types/qrcode": "^1.5.5",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
     "express": "^4.18.2",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",

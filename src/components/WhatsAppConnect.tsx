@@ -154,10 +154,11 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
             .then(response => response.json())
             .then(chatsData => {
                 console.log('Загружены чаты:', chatsData);
-                setChats(chatsData);
+                setChats(chatsData || {});
             })
             .catch(error => {
                 console.error('Ошибка при загрузке чатов:', error);
+                setChats({});
             });
 
         return () => {
@@ -195,10 +196,12 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
         }
     };
 
-    const filteredChats = Object.values(chats).filter(chat => 
-        chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        chat.phoneNumber.includes(searchQuery)
-    );
+    const filteredChats = Object.values(chats).filter(chat => {
+        const query = searchQuery || '';
+        const name = chat.name || '';
+        return name.toLowerCase().includes(query.toLowerCase()) ||
+            chat.phoneNumber.includes(query);
+    });
 
     const activeChatMessages = activeChat ? chats[activeChat]?.messages || [] : [];
 

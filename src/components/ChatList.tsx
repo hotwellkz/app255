@@ -33,10 +33,17 @@ const ChatList: React.FC<ChatListProps> = ({
         return message.body;
     };
 
-    const filteredChats = Object.values(chats).filter(chat => 
-        chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        chat.phoneNumber.includes(searchQuery)
-    );
+    const filteredChats = Object.entries(chats)
+        .filter(([_, chat]) => {
+            const query = searchQuery || '';
+            const name = chat.name || '';
+            return name.toLowerCase().includes(query.toLowerCase()) ||
+                chat.phoneNumber.includes(query);
+        })
+        .map(([id, chat]) => ({
+            id,
+            ...chat
+        }));
 
     return (
         <div className={`flex flex-col h-full ${isMobile && activeChat ? 'hidden' : 'flex'} bg-white md:w-[400px] w-full`}>
@@ -66,7 +73,7 @@ const ChatList: React.FC<ChatListProps> = ({
             <div className="flex-1 overflow-y-auto">
                 {filteredChats.map((chat) => (
                     <div
-                        key={chat.phoneNumber}
+                        key={`${chat.id}-${chat.phoneNumber}`}
                         onClick={() => setActiveChat(chat.phoneNumber)}
                         className={`flex items-center p-3 cursor-pointer hover:bg-[#f0f2f5] border-b ${
                             activeChat === chat.phoneNumber ? 'bg-[#f0f2f5]' : ''
@@ -74,7 +81,7 @@ const ChatList: React.FC<ChatListProps> = ({
                     >
                         {/* Аватар */}
                         <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white">
-                            {chat.name[0].toUpperCase()}
+                            {(chat.name || '?')[0]?.toUpperCase() || '?'}
                         </div>
                         
                         {/* Информация о чате */}
@@ -88,9 +95,9 @@ const ChatList: React.FC<ChatListProps> = ({
                                 )}
                             </div>
                             {chat.lastMessage && (
-                                <div className="text-sm text-gray-500 truncate">
+                                <p className="text-sm text-gray-500 truncate">
                                     {formatLastMessage(chat.lastMessage)}
-                                </div>
+                                </p>
                             )}
                         </div>
                         

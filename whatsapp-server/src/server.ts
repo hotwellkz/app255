@@ -1,28 +1,35 @@
 import express from 'express';
-import { Client, LocalAuth, Message } from 'whatsapp-web.js';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
-import cors from 'cors';
+import { Client, LocalAuth, Message } from 'whatsapp-web.js';
 import qrcode from 'qrcode';
 import fs from 'fs';
-import { loadChats, addMessage } from './utils/chatStorage';
+import dotenv from 'dotenv';
+import path from 'path';
+import cors from 'cors';
+import { loadChats, addMessage, saveChats } from './utils/chatStorage';
 import { ChatMessage, Chat } from './types/chat';
+
+// Загружаем переменные окружения
+const envPath = path.resolve(__dirname, '../.env');
+console.log('Путь к .env файлу:', envPath);
+dotenv.config({ path: envPath });
+console.log('Переменные окружения загружены');
 
 const app = express();
 const httpServer = createServer(app);
 
-// Настройка CORS для Express
+// Настройка CORS
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'https://2wix.ru'],
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Accept'],
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    methods: ['GET', 'POST'],
     credentials: true
 };
 
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Настройка Socket.IO с CORS
+// Настройка Socket.IO
 const io = new Server(httpServer, {
     cors: {
         origin: ['http://localhost:5173', 'http://localhost:5174', 'https://2wix.ru'],
@@ -42,10 +49,10 @@ const client = new Client({
 });
 
 // API endpoint для получения сохраненных чатов
-app.get('/chats', (req, res) => {
+app.get('/chats', async (req, res) => {
     console.log('GET /chats запрос получен');
     try {
-        const chats = loadChats();
+        const chats = await loadChats();
         console.log('Чаты загружены:', chats);
         res.json(chats);
     } catch (error) {
@@ -93,12 +100,12 @@ app.post('/chat', async (req, res) => {
             updatedAt: new Date().toISOString()
         };
 
-        // Добавляем чат в хранилище
-        const chats = loadChats();
+        // Получаем текущие чаты и добавляем новый
+        const chats = await loadChats();
         chats[formattedNumber] = newChat;
         
         // Сохраняем обновленные чаты
-        fs.writeFileSync('./src/data/chats.json', JSON.stringify(chats, null, 2));
+        await saveChats(chats);
 
         // Оповещаем всех клиентов о новом чате
         io.emit('chat-created', newChat);
@@ -117,12 +124,12 @@ app.post('/chat', async (req, res) => {
 });
 
 // Обработка socket.io подключений
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
     console.log('Новое Socket.IO подключение');
 
     // Отправляем текущие чаты при подключении
     try {
-        const chats = loadChats();
+        const chats = await loadChats();
         socket.emit('chats', chats);
     } catch (error) {
         console.error('Ошибка при отправке чатов через сокет:', error);
