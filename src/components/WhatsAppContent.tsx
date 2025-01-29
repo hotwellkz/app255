@@ -38,13 +38,6 @@ const WhatsAppContent: React.FC = () => {
                         <MdQrCode2 className="w-6 h-6" />
                         <span className="text-sm hidden md:inline">Сканировать QR-код</span>
                     </div>
-                    <div 
-                        className="cursor-pointer flex items-center gap-2 text-white"
-                        onClick={() => setShowNewContact(true)}
-                    >
-                        <MdPersonAdd className="w-6 h-6" />
-                        <span className="text-sm hidden md:inline">Новый контакт</span>
-                    </div>
                 </div>
             </div>
 

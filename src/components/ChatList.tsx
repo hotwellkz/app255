@@ -79,9 +79,16 @@ const ChatList: React.FC<ChatListProps> = ({
                             activeChat === chat.phoneNumber ? 'bg-[#f0f2f5]' : ''
                         }`}
                     >
-                        {/* Аватар */}
-                        <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white">
-                            {(chat.name || '?')[0]?.toUpperCase() || '?'}
+                        {/* Аватар с индикатором непрочитанных сообщений */}
+                        <div className="relative">
+                            <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white">
+                                {(chat.name || '?')[0]?.toUpperCase() || '?'}
+                            </div>
+                            {chat.unreadCount > 0 && (
+                                <div className="absolute -top-1 -right-1 bg-[#25D366] text-white rounded-full min-w-[20px] h-[20px] flex items-center justify-center text-xs font-medium px-1">
+                                    {chat.unreadCount}
+                                </div>
+                            )}
                         </div>
                         
                         {/* Информация о чате */}
@@ -100,13 +107,6 @@ const ChatList: React.FC<ChatListProps> = ({
                                 </p>
                             )}
                         </div>
-                        
-                        {/* Индикатор непрочитанных сообщений */}
-                        {chat.unreadCount > 0 && (
-                            <div className="ml-2 bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                                {chat.unreadCount}
-                            </div>
-                        )}
                     </div>
                 ))}
             </div>
