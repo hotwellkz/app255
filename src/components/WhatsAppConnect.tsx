@@ -287,27 +287,41 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl, isMobile }
                 {activeChat && (
                     <div className="flex flex-col h-full">
                         {/* Шапка чата с кнопкой "Назад" для мобильной версии */}
-                        <div className="sticky top-0 z-10 bg-[#f0f2f5] flex items-center p-2 border-b border-gray-200">
-                            {isMobile && (
+                        {isMobile ? (
+                            <div className="sticky top-0 z-10 bg-[#f0f2f5] flex items-center p-2 border-b border-gray-200">
                                 <button
                                     onClick={() => setActiveChat(null)}
                                     className="p-2 hover:bg-gray-200 rounded-full mr-2 transition-colors"
                                 >
                                     <MdArrowBack size={24} />
                                 </button>
-                            )}
-                            <div className="flex items-center">
-                                <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                                    <span className="text-xl text-white">
-                                        {chats[activeChat].name[0].toUpperCase()}
-                                    </span>
-                                </div>
-                                <div className="ml-3">
-                                    <div className="font-semibold">{chats[activeChat].name}</div>
-                                    <div className="text-sm text-gray-500">онлайн</div>
+                                <div className="flex items-center">
+                                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                                        <span className="text-xl text-white">
+                                            {chats[activeChat].name[0].toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <div className="ml-3">
+                                        <div className="font-semibold">{chats[activeChat].name}</div>
+                                        <div className="text-sm text-gray-500">онлайн</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="bg-[#f0f2f5] p-2 flex items-center border-b border-gray-200">
+                                <div className="flex items-center">
+                                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                                        <span className="text-xl text-white">
+                                            {chats[activeChat].name[0].toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <div className="ml-3">
+                                        <div className="font-semibold">{chats[activeChat].name}</div>
+                                        <div className="text-sm text-gray-500">онлайн</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         
                         <ChatWindow
                             chat={activeChat ? chats[activeChat] : null}
