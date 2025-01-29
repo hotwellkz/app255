@@ -24,9 +24,9 @@ const WhatsAppContent: React.FC = () => {
     }, []);
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full w-full">
             {/* Верхняя панель */}
-            <div className="bg-[#00a884] text-white p-4 flex items-center justify-between">
+            <div className="bg-[#00a884] text-white px-4 py-2 flex items-center justify-between shadow-sm">
                 {/* Левая часть */}
                 <div className="flex items-center space-x-4">
                     <span className="text-lg font-semibold">Подключено к серверу</span>
@@ -36,7 +36,7 @@ const WhatsAppContent: React.FC = () => {
                 <div className="flex items-center space-x-4">
                     <button
                         onClick={() => setShowQR(true)}
-                        className="flex items-center space-x-2 hover:bg-[#017561] px-3 py-1 rounded"
+                        className="flex items-center space-x-2 hover:bg-[#017561] px-3 py-1 rounded transition-colors"
                     >
                         <MdQrCode2 className="w-5 h-5" />
                         <span className="text-sm hidden md:inline">Сканировать QR-код</span>
@@ -52,7 +52,7 @@ const WhatsAppContent: React.FC = () => {
                             <h2 className="text-xl font-semibold">Сканируйте QR-код</h2>
                             <button
                                 onClick={() => setShowQR(false)}
-                                className="text-gray-500 hover:text-gray-700"
+                                className="text-gray-500 hover:text-gray-700 transition-colors"
                             >
                                 <svg
                                     className="w-6 h-6"
@@ -86,7 +86,7 @@ const WhatsAppContent: React.FC = () => {
             )}
 
             {/* Основной контент */}
-            <div className="flex-1 bg-[#eae6df] relative">
+            <div className="flex-1 overflow-hidden">
                 <WhatsAppConnect serverUrl={import.meta.env.VITE_API_URL} isMobile={isMobile} />
             </div>
         </div>
