@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { MdSend, MdArrowBack } from 'react-icons/md';
+import { MdSend } from 'react-icons/md';
 import { Chat, WhatsAppMessage } from '../types/WhatsAppTypes';
 
 interface ChatWindowProps {
@@ -7,7 +7,7 @@ interface ChatWindowProps {
     message: string;
     setMessage: (message: string) => void;
     onSendMessage: () => void;
-    onBack: () => void;
+    status: string;
     isMobile: boolean;
 }
 
@@ -16,7 +16,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     message,
     setMessage,
     onSendMessage,
-    onBack,
+    status,
     isMobile
 }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -46,31 +46,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
 
     return (
-        <div className={`flex flex-col h-full ${isMobile && !chat ? 'hidden' : 'flex'} flex-1 bg-[#efeae2]`}>
-            {/* Верхняя панель чата */}
-            <div className="bg-[#f0f2f5] p-3 flex items-center gap-4">
-                {isMobile && (
-                    <button
-                        onClick={onBack}
-                        className="p-1 hover:bg-gray-200 rounded-full"
-                    >
-                        <MdArrowBack size={24} />
-                    </button>
-                )}
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white">
-                        {chat.name[0].toUpperCase()}
-                    </div>
-                    <div>
-                        <div className="font-medium">{chat.name}</div>
-                        <div className="text-sm text-gray-500">{chat.phoneNumber}</div>
-                    </div>
-                </div>
-            </div>
-
+        <div className="flex flex-col h-full relative">
             {/* Область сообщений */}
-            <div className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-2">
+            <div className="flex-1 overflow-y-auto pb-16">
+                <div className="space-y-2 p-4">
                     {chat.messages.map((msg, index) => (
                         <div
                             key={index}
@@ -95,7 +74,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </div>
 
             {/* Панель ввода сообщения */}
-            <div className="bg-[#f0f2f5] p-3">
+            <div className="absolute bottom-0 left-0 right-0 bg-[#f0f2f5] p-3">
                 <div className="flex items-center gap-2">
                     <input
                         type="text"
@@ -103,14 +82,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && onSendMessage()}
                         placeholder="Введите сообщение"
-                        className="flex-1 py-2 px-4 rounded-lg"
+                        className="flex-1 px-4 py-2 rounded-lg focus:outline-none"
                     />
                     <button
                         onClick={onSendMessage}
                         disabled={!message.trim()}
-                        className="p-2 bg-[#00a884] text-white rounded-full disabled:opacity-50"
+                        className={`p-2 rounded-full ${
+                            message.trim() ? 'text-[#00a884] hover:bg-gray-200' : 'text-gray-400'
+                        }`}
                     >
-                        <MdSend size={20} />
+                        <MdSend size={24} />
                     </button>
                 </div>
             </div>
