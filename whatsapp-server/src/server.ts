@@ -25,7 +25,8 @@ const allowedOrigins = [
     'http://localhost:5174',
     'https://2wix.ru',
     'https://www.2wix.ru',
-    'https://netlify.app'
+    'https://netlify.app',
+    'http://192.168.100.36:5173'
 ];
 
 // Настройка CORS
