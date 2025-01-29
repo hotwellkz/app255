@@ -19,9 +19,27 @@ console.log('Переменные окружения загружены');
 const app = express();
 const httpServer = createServer(app);
 
+// Список разрешенных источников
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://2wix.ru'
+];
+
 // Настройка CORS
 const corsOptions = {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+        // Разрешаем запросы без origin (например, от Postman или curl)
+        if (!origin) {
+            return callback(null, true);
+        }
+        
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     methods: ['GET', 'POST'],
     credentials: true
 };
@@ -32,7 +50,7 @@ app.use(express.json());
 // Настройка Socket.IO
 const io = new Server(httpServer, {
     cors: {
-        origin: ['http://localhost:5173', 'http://localhost:5174', 'https://2wix.ru'],
+        origin: allowedOrigins,
         methods: ["GET", "POST"],
         credentials: true
     },
