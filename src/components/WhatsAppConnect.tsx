@@ -4,9 +4,11 @@ import { WhatsAppMessage } from '../types/WhatsAppTypes';
 import { useChat } from '../context/ChatContext';
 import ChatList from './ChatList';
 import ChatWindow from './ChatWindow';
+import { MdArrowBack } from 'react-icons/md';
 
 interface WhatsAppConnectProps {
     serverUrl: string;
+    isMobile: boolean;
 }
 
 interface Chat {
@@ -17,7 +19,7 @@ interface Chat {
     unreadCount: number;
 }
 
-const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
+const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl, isMobile }) => {
     const { setQrCode } = useChat();
     const [socket, setSocket] = useState<Socket | null>(null);
     const [isQrScanned, setIsQrScanned] = useState<boolean>(false);
@@ -32,9 +34,7 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
 
     // Функция для форматирования номера телефона
     const formatPhoneNumber = (phoneNumber: string) => {
-        // Удаляем все нецифровые символы
         const cleaned = phoneNumber.replace(/\D/g, '');
-        // Добавляем @c.us если его нет
         return cleaned.endsWith('@c.us') ? cleaned : `${cleaned}@c.us`;
     };
 
@@ -47,7 +47,6 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
 
         const formattedPhone = formatPhoneNumber(newChatPhone);
         
-        // Создаем новый чат
         const newChat: Chat = {
             phoneNumber: formattedPhone,
             name: newChatName || formattedPhone.replace('@c.us', ''),
@@ -60,10 +59,7 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
             [formattedPhone]: newChat
         }));
 
-        // Устанавливаем новый чат как активный
         setActiveChat(formattedPhone);
-
-        // Очищаем форму
         setNewChatPhone('');
         setNewChatName('');
         setShowNewChatDialog(false);
@@ -116,7 +112,7 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
     };
 
     useEffect(() => {
-        const newSocket = io('http://localhost:3000', {
+        const newSocket = io(serverUrl, {
             withCredentials: true
         });
 
@@ -180,7 +176,7 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
 
         setSocket(newSocket);
 
-        fetch('http://localhost:3000/chats', {
+        fetch(`${serverUrl}/chats`, {
             credentials: 'include'
         })
             .then(response => response.json())
@@ -196,13 +192,13 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
         return () => {
             newSocket.close();
         };
-    }, [setQrCode]);
+    }, [serverUrl, setQrCode]);
 
     const handleSendMessage = async () => {
         if (!activeChat || !message) return;
 
         try {
-            const response = await fetch('http://localhost:3000/send-message', {
+            const response = await fetch(`${serverUrl}/send-message`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -233,9 +229,10 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
 
     return (
         <div className="flex h-full">
+            {/* Модальное окно создания нового чата */}
             {showNewChatDialog && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-4 rounded-lg w-96">
+                    <div className="bg-white p-4 rounded-lg w-96 mx-4">
                         <h2 className="text-lg font-semibold mb-4">Новый чат</h2>
                         <input
                             type="text"
@@ -269,27 +266,52 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
                 </div>
             )}
             
-            <ChatList
-                chats={chats}
-                activeChat={activeChat}
-                setActiveChat={(chatId) => {
-                    setActiveChat(chatId);
-                    resetUnreadCount(chatId);
-                }}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                onNewChat={handleNewChat}
-                isMobile={false}
-            />
+            {/* Список чатов (скрывается на мобильных при открытом чате) */}
+            <div className={`${isMobile && activeChat ? 'hidden' : 'flex-1 md:flex-none md:w-[400px]'}`}>
+                <ChatList
+                    chats={chats}
+                    activeChat={activeChat}
+                    setActiveChat={(chatId) => {
+                        setActiveChat(chatId);
+                        resetUnreadCount(chatId);
+                    }}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    onNewChat={handleNewChat}
+                    isMobile={isMobile}
+                />
+            </div>
             
-            <ChatWindow
-                chat={activeChat ? chats[activeChat] : null}
-                message={message}
-                setMessage={setMessage}
-                onSendMessage={handleSendMessage}
-                status={status}
-                isMobile={false}
-            />
+            {/* Окно чата (на мобильных занимает весь экран) */}
+            <div className={`${isMobile && !activeChat ? 'hidden' : 'flex-1'}`}>
+                {activeChat && (
+                    <div className="flex flex-col h-full">
+                        {/* Шапка чата с кнопкой "Назад" для мобильной версии */}
+                        {isMobile && (
+                            <div className="bg-[#f0f2f5] p-2 flex items-center">
+                                <button
+                                    onClick={() => setActiveChat(null)}
+                                    className="p-2 hover:bg-gray-200 rounded-full mr-2"
+                                >
+                                    <MdArrowBack className="w-6 h-6" />
+                                </button>
+                                <span className="font-medium">
+                                    {chats[activeChat]?.name || activeChat}
+                                </span>
+                            </div>
+                        )}
+                        
+                        <ChatWindow
+                            chat={activeChat ? chats[activeChat] : null}
+                            message={message}
+                            setMessage={setMessage}
+                            onSendMessage={handleSendMessage}
+                            status={status}
+                            isMobile={isMobile}
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

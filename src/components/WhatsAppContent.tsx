@@ -1,101 +1,94 @@
-import React, { useState } from 'react';
-import WhatsAppConnect from './WhatsAppConnect';
-import WhatsAppQRCode from './WhatsAppQRCode';
+import React, { useState, useEffect } from 'react';
 import { useChat } from '../context/ChatContext';
-import { MdQrCode2, MdPersonAdd } from 'react-icons/md';
+import WhatsAppConnect from './WhatsAppConnect';
+import { QRCodeSVG } from 'qrcode.react';
+import { MdArrowBack, MdQrCode2 } from 'react-icons/md';
 
 const WhatsAppContent: React.FC = () => {
-    const [showQRCode, setShowQRCode] = useState(false);
-    const [showNewContact, setShowNewContact] = useState(false);
-    const [phoneNumber, setPhoneNumber] = useState('');
-    const { createChat } = useChat();
+    const { qrCode } = useChat();
+    const [showQR, setShowQR] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
-    const handleCreateContact = async () => {
-        if (!phoneNumber) return;
+    // Определяем, является ли устройство мобильным
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
         
-        // Форматируем номер телефона (убираем все кроме цифр)
-        const formattedNumber = phoneNumber.replace(/\D/g, '');
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
         
-        try {
-            await createChat(formattedNumber);
-            setShowNewContact(false);
-            setPhoneNumber('');
-        } catch (error) {
-            console.error('Error creating chat:', error);
-        }
-    };
+        return () => {
+            window.removeEventListener('resize', checkMobile);
+        };
+    }, []);
 
     return (
-        <div className="h-screen bg-[#f0f2f5] relative flex flex-col">
+        <div className="flex flex-col h-full">
             {/* Верхняя панель */}
-            <div className="w-full bg-[#00a884] px-4 py-2 flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                    <span className="text-white hidden md:inline">Подключено к серверу</span>
-                    <div 
-                        className="cursor-pointer flex items-center gap-2 text-white"
-                        onClick={() => setShowQRCode(true)}
+            <div className="bg-[#00a884] text-white p-4 flex items-center justify-between">
+                {/* Левая часть */}
+                <div className="flex items-center space-x-4">
+                    <span className="text-lg font-semibold">Подключено к серверу</span>
+                </div>
+
+                {/* Правая часть */}
+                <div className="flex items-center space-x-4">
+                    <button
+                        onClick={() => setShowQR(true)}
+                        className="flex items-center space-x-2 hover:bg-[#017561] px-3 py-1 rounded"
                     >
-                        <MdQrCode2 className="w-6 h-6" />
+                        <MdQrCode2 className="w-5 h-5" />
                         <span className="text-sm hidden md:inline">Сканировать QR-код</span>
-                    </div>
+                    </button>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-hidden">
-                <WhatsAppConnect serverUrl="http://localhost:3000" />
-            </div>
-
-            {/* Модальные окна */}
-            {showQRCode && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg p-6 relative max-w-md w-full">
-                        <button 
-                            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-                            onClick={() => setShowQRCode(false)}
-                        >
-                            ✕
-                        </button>
-                        <WhatsAppQRCode />
-                    </div>
-                </div>
-            )}
-
-            {showNewContact && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg p-6 relative max-w-md w-full">
-                        <button 
-                            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-                            onClick={() => {
-                                setShowNewContact(false);
-                                setPhoneNumber('');
-                            }}
-                        >
-                            ✕
-                        </button>
-                        <h2 className="text-xl font-semibold mb-4">Новый контакт</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    Номер телефона
-                                </label>
-                                <input
-                                    type="tel"
-                                    value={phoneNumber}
-                                    onChange={(e) => setPhoneNumber(e.target.value)}
-                                    placeholder="Например: +7 777 123 45 67"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                                />
-                            </div>
+            {/* Модальное окно с QR-кодом */}
+            {showQR && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-semibold">Сканируйте QR-код</h2>
                             <button
-                                onClick={handleCreateContact}
-                                className="w-full bg-[#00a884] text-white rounded-md py-2 hover:bg-[#008f6c]"
+                                onClick={() => setShowQR(false)}
+                                className="text-gray-500 hover:text-gray-700"
                             >
-                                Создать чат
+                                <svg
+                                    className="w-6 h-6"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M6 18L18 6M6 6l12 12"
+                                    />
+                                </svg>
                             </button>
                         </div>
+                        <div className="flex justify-center">
+                            {qrCode ? (
+                                <QRCodeSVG value={qrCode} size={256} />
+                            ) : (
+                                <div className="flex items-center justify-center w-64 h-64 bg-gray-100 rounded-lg">
+                                    <span className="text-gray-500">QR-код загружается...</span>
+                                </div>
+                            )}
+                        </div>
+                        <p className="mt-4 text-center text-gray-600">
+                            Откройте WhatsApp на вашем телефоне и отсканируйте QR-код
+                        </p>
                     </div>
                 </div>
             )}
+
+            {/* Основной контент */}
+            <div className="flex-1 bg-[#eae6df] relative">
+                <WhatsAppConnect serverUrl="http://localhost:3000" isMobile={isMobile} />
+            </div>
         </div>
     );
 };
