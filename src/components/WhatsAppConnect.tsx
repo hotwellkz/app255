@@ -26,10 +26,48 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
     const [chats, setChats] = useState<{ [key: string]: Chat }>({});
     const [activeChat, setActiveChat] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>('');
+    const [showNewChatDialog, setShowNewChatDialog] = useState(false);
+    const [newChatPhone, setNewChatPhone] = useState('');
+    const [newChatName, setNewChatName] = useState('');
 
     // Функция для форматирования номера телефона
     const formatPhoneNumber = (phoneNumber: string) => {
-        return phoneNumber.replace(/@[a-z.]+$/i, '');
+        // Удаляем все нецифровые символы
+        const cleaned = phoneNumber.replace(/\D/g, '');
+        // Добавляем @c.us если его нет
+        return cleaned.endsWith('@c.us') ? cleaned : `${cleaned}@c.us`;
+    };
+
+    // Функция создания нового контакта
+    const handleCreateNewChat = () => {
+        if (!newChatPhone) {
+            alert('Пожалуйста, введите номер телефона');
+            return;
+        }
+
+        const formattedPhone = formatPhoneNumber(newChatPhone);
+        
+        // Создаем новый чат
+        const newChat: Chat = {
+            phoneNumber: formattedPhone,
+            name: newChatName || formattedPhone.replace('@c.us', ''),
+            messages: [],
+            unreadCount: 0
+        };
+
+        setChats(prevChats => ({
+            ...prevChats,
+            [formattedPhone]: newChat
+        }));
+
+        // Устанавливаем новый чат как активный
+        setActiveChat(formattedPhone);
+
+        // Очищаем форму
+        setNewChatPhone('');
+        setNewChatName('');
+        setShowNewChatDialog(false);
+        setSearchQuery('');
     };
 
     // Функция для добавления сообщения в чат
@@ -41,7 +79,7 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
             if (!updatedChats[phoneNumber]) {
                 updatedChats[phoneNumber] = {
                     phoneNumber,
-                    name: message.sender || formatPhoneNumber(phoneNumber),
+                    name: message.sender || formatPhoneNumber(phoneNumber).replace('@c.us', ''),
                     messages: [],
                     unreadCount: 0
                 };
@@ -57,8 +95,7 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
             if (!messageExists) {
                 updatedChats[phoneNumber].messages = [...updatedChats[phoneNumber].messages, message];
                 updatedChats[phoneNumber].lastMessage = message;
-                // Увеличиваем счетчик непрочитанных сообщений только для входящих сообщений
-                if (!message.fromMe) {
+                if (!message.fromMe && phoneNumber !== activeChat) {
                     updatedChats[phoneNumber].unreadCount += 1;
                 }
             }
@@ -90,11 +127,9 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
         newSocket.on('qr', (qrData: string) => {
             console.log('Получен QR-код, длина:', qrData.length);
             try {
-                // Пытаемся распарсить данные, если они в формате JSON
                 const parsedData = JSON.parse(qrData);
                 console.log('QR данные в формате JSON:', parsedData);
                 
-                // Если это объект, берем только нужные поля
                 if (typeof parsedData === 'object') {
                     const qrString = parsedData.code || parsedData.qr || parsedData.data || qrData;
                     console.log('Извлеченная строка QR:', qrString);
@@ -103,7 +138,6 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
                     setQrCode(qrData);
                 }
             } catch (e) {
-                // Если это не JSON, используем как есть
                 console.log('QR данные в обычном формате:', qrData);
                 setQrCode(qrData);
             }
@@ -124,7 +158,6 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
             addMessageToChat(message);
         });
 
-        // Обработка обновления чата
         newSocket.on('chat-updated', (updatedChat: Chat) => {
             console.log('Получено обновление чата:', updatedChat);
             setChats(prevChats => ({
@@ -137,7 +170,7 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
             console.log('WhatsApp отключен');
             setStatus('WhatsApp отключен');
             setIsQrScanned(false);
-            setQrCode(''); // Очищаем QR-код
+            setQrCode('');
         });
 
         newSocket.on('auth_failure', (error: string) => {
@@ -147,7 +180,6 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
 
         setSocket(newSocket);
 
-        // Загружаем историю чатов при подключении
         fetch('http://localhost:3000/chats', {
             credentials: 'include'
         })
@@ -188,7 +220,6 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
                 throw new Error(data.error || 'Ошибка при отправке сообщения');
             }
 
-            // Очищаем поле ввода только после успешной отправки
             setMessage('');
         } catch (error) {
             console.error('Ошибка при отправке сообщения:', error);
@@ -196,39 +227,68 @@ const WhatsAppConnect: React.FC<WhatsAppConnectProps> = ({ serverUrl }) => {
         }
     };
 
-    const filteredChats = Object.values(chats).filter(chat => {
-        const query = searchQuery || '';
-        const name = chat.name || '';
-        return name.toLowerCase().includes(query.toLowerCase()) ||
-            chat.phoneNumber.includes(query);
-    });
-
-    const activeChatMessages = activeChat ? chats[activeChat]?.messages || [] : [];
+    const handleNewChat = () => {
+        setShowNewChatDialog(true);
+    };
 
     return (
         <div className="flex h-full">
+            {showNewChatDialog && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-4 rounded-lg w-96">
+                        <h2 className="text-lg font-semibold mb-4">Новый чат</h2>
+                        <input
+                            type="text"
+                            placeholder="Номер телефона"
+                            value={newChatPhone}
+                            onChange={(e) => setNewChatPhone(e.target.value)}
+                            className="w-full p-2 mb-2 border rounded"
+                        />
+                        <input
+                            type="text"
+                            placeholder="Имя (необязательно)"
+                            value={newChatName}
+                            onChange={(e) => setNewChatName(e.target.value)}
+                            className="w-full p-2 mb-4 border rounded"
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => setShowNewChatDialog(false)}
+                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                            >
+                                Отмена
+                            </button>
+                            <button
+                                onClick={handleCreateNewChat}
+                                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                            >
+                                Создать
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
             <ChatList
                 chats={chats}
                 activeChat={activeChat}
                 setActiveChat={(chatId) => {
                     setActiveChat(chatId);
-                    if (chats[chatId]) {
-                        resetUnreadCount(chatId);
-                    }
+                    resetUnreadCount(chatId);
                 }}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
-                onNewChat={() => {}} // Добавьте обработчик для создания нового чата
-                isMobile={window.innerWidth < 768}
+                onNewChat={handleNewChat}
+                isMobile={false}
             />
             
             <ChatWindow
-                chat={activeChat ? chats[activeChat] : undefined}
+                chat={activeChat ? chats[activeChat] : null}
                 message={message}
                 setMessage={setMessage}
                 onSendMessage={handleSendMessage}
-                onBack={() => setActiveChat(null)}
-                isMobile={window.innerWidth < 768}
+                status={status}
+                isMobile={false}
             />
         </div>
     );
